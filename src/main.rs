@@ -25,23 +25,16 @@ struct HitRecord {
     front_face : bool,
 }
 
-// This shouldn't be necessary, considering making hit fn return
-// Option<HitRecord>
-impl Default for HitRecord {
-    fn default() -> Self {
-        HitRecord {
-            t : 0.0,
-            p : Vec3::new(0.0,0.0,0.0),
-            normal : Vec3::new(0.0,0.0,0.0),
-            front_face : true,
-        }
-    }
-}
-
 impl HitRecord {
-    fn set_face_normal(&mut self, ray : &Ray, outward_normal : Vec3) {
-        self.front_face = Vec3::dot(ray.direction(), outward_normal) < 0.0;
-        self.normal = if self.front_face { outward_normal } else { -outward_normal };
+    fn new(t : f64, p : Vec3, outward_normal : Vec3, ray : &Ray) -> Self {
+        let front_face = Vec3::dot(ray.direction(), outward_normal) < 0.0;
+        let normal = if front_face { outward_normal } else { -outward_normal };
+        HitRecord {
+            t: t,
+            p: p,
+            normal: normal,
+            front_face: front_face,
+        }
     }
 }
 
@@ -50,11 +43,11 @@ trait Material {
 }
 
 trait Hittable {
-    fn hit(&self, ray : &Ray, t_min : f64, t_max : f64, rec : &mut HitRecord) -> bool;
+    fn hit(&self, ray : &Ray, t_min : f64, t_max : f64) -> Option<HitRecord>;
 }
 
 impl Hittable for Sphere {
-    fn hit(&self, ray : &Ray, t_min : f64, t_max : f64, rec : &mut HitRecord) -> bool {
+    fn hit(&self, ray : &Ray, t_min : f64, t_max : f64) -> Option<HitRecord> {
         let oc = ray.origin() - self.center();
         let a = ray.direction().length_squared();
         let half_b = Vec3::dot(oc, ray.direction());
@@ -64,23 +57,19 @@ impl Hittable for Sphere {
             let root = discriminant.sqrt();
             let t_hit = (-half_b - root) / a;
             if t_hit < t_max && t_hit > t_min {
-                rec.t = t_hit;
-                rec.p = ray.at(t_hit);
-                let outward_normal = (rec.p - self.center()) / self.radius();
-                rec.set_face_normal(ray, outward_normal);
-                return true;
+                let p = ray.at(t_hit);
+                let outward_normal = (p - self.center()) / self.radius();
+                return Some(HitRecord::new(t_hit, ray.at(t_hit), outward_normal, ray))
             }
             let t_hit = (-half_b + root) / a;
             if t_hit < t_max && t_hit > t_min {
-                rec.t = t_hit;
-                rec.p = ray.at(rec.t);
-                let outward_normal = (rec.p - self.center()) / self.radius();
-                rec.set_face_normal(ray, outward_normal);
-                return true;
+                let p = ray.at(t_hit);
+                let outward_normal = (p - self.center()) / self.radius();
+                return Some(HitRecord::new(t_hit, ray.at(t_hit), outward_normal, ray))
             }
-            return false;
+            return None;
         } else {
-            return false;
+            return None;
         }
     }
 }
@@ -105,23 +94,23 @@ impl HittableList {
         self.objects.push(Box::new(object))
     }
 
-    pub fn hit(&self, ray : &Ray, t_min : f64, t_max : f64, rec : &mut HitRecord) -> bool {
-        let mut temp_rec = HitRecord::default();
+    pub fn hit(&self, ray : &Ray, t_min : f64, t_max : f64) -> Option<HitRecord> {
         let mut hit_anything = false;
         let mut closest_so_far = t_max;
+        let mut rec = None;
 
         for object in &self.objects {
-            if object.hit(ray, t_min, closest_so_far, &mut temp_rec) {
-                hit_anything = true;
-                closest_so_far = temp_rec.t;
-                rec.t = temp_rec.t;
-                rec.p = temp_rec.p;
-                rec.normal = temp_rec.normal;
-                rec.front_face = temp_rec.front_face;
+            match object.hit(ray, t_min, closest_so_far) {
+                None => continue,
+                Some(temp_rec) => {
+                    hit_anything = true;
+                    closest_so_far = temp_rec.t;
+                    rec = Some(temp_rec);
+                }
             }
         }
 
-        return hit_anything;
+        return rec;
     }
 }
 
@@ -155,18 +144,19 @@ fn ray_color<T : Rng>(ray: &Ray, world : &HittableList, rng : &mut T, depth : u8
         return Vec3::new(0.0,0.0,0.0);
     }
 
-    let mut rec = HitRecord::default();
-
-    if world.hit(ray, 0.001, f64::INFINITY, &mut rec) {
-        let target = rec.p + rec.normal + random_unit_vector(rng);
-        return 0.5 * ray_color(&Ray::new(rec.p, target - rec.p), world, rng, depth-1);
+    match world.hit(ray, 0.001, f64::INFINITY) {
+        None => {
+            // Show gradient for background
+            let unit_direction = ray.direction().to_unit();
+            let t = 0.5*(unit_direction.y() + 1.0);
+            let lerped = (1.0-t) * Vec3::new(1.0, 1.0, 1.0) + t * Vec3::new(0.5, 0.7, 1.0);
+            return lerped;
+        },
+        Some(rec) => {
+            let target = rec.p + rec.normal + random_unit_vector(rng);
+            return 0.5 * ray_color(&Ray::new(rec.p, target - rec.p), world, rng, depth-1);
+        }
     }
-
-    // Show gradient for background
-    let unit_direction = ray.direction().to_unit();
-    let t = 0.5*(unit_direction.y() + 1.0);
-    let lerped = (1.0-t) * Vec3::new(1.0, 1.0, 1.0) + t * Vec3::new(0.5, 0.7, 1.0);
-    return lerped;
 }
 
 const SAMPLES_PER_PIXEL : u16 = 1000;
@@ -194,7 +184,7 @@ fn main() {
 
     let start = Instant::now();
 
-    eprintln!("{}x{} image with {} samples per pixel", IMAGE_HEIGHT, IMAGE_WIDTH, SAMPLES_PER_PIXEL);
+    eprintln!("{}x{} image with {} samples per pixel", IMAGE_WIDTH, IMAGE_HEIGHT, SAMPLES_PER_PIXEL);
     for j in (0..pm.height).rev() {
         eprint!("\rScanlines remaining: {}", j);
 
