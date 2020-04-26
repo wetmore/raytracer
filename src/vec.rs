@@ -1,4 +1,4 @@
-use std::ops::{Add, Mul, Sub};
+use std::ops::{Add, Sub, Mul, Div};
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Vec3(f32, f32, f32);
@@ -75,5 +75,13 @@ impl Mul<Vec3> for f32 {
 
     fn mul(self, other: Vec3) -> Self::Output {
         Vec3::new(self * other.0, self * other.1, self * other.2)
+    }
+}
+
+impl Div<f32> for Vec3 {
+    type Output = Vec3;
+
+    fn div(self, other: f32) -> Self::Output {
+        Vec3::new(self.0 / other, self.1 / other, self.2 / other)
     }
 }

@@ -3,6 +3,10 @@ use crate::vec::Vec3;
 pub struct Color(u8, u8, u8);
 
 impl Color {
+    pub fn new(r : u8, g : u8, b : u8) -> Self {
+        Color(r,g,b)
+    }
+
     fn r(&self) -> u8 {
         self.0
     }
