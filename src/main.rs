@@ -1,10 +1,17 @@
+extern crate rand;
+
+use rand::Rng;
+use std::time::{Duration, Instant};
+
 mod color;
 mod vec;
 mod solids;
 
 use color::Color;
+use color::Samples;
 use vec::Vec3;
 use solids::Sphere;
+
 
 struct HitRecord {
     t : f32,
@@ -108,46 +115,89 @@ impl HittableList {
     }
 }
 
-fn ray_color(ray: &Ray, world : &HittableList) -> Color {
+struct Camera {
+    origin : Vec3,
+    lower_left_corner : Vec3,
+    horizontal : Vec3,
+    vertical : Vec3,
+}
+
+impl Default for Camera {
+    fn default() -> Self {
+        Camera {
+            origin: Vec3::new(0.0, 0.0, 0.0),
+            lower_left_corner: Vec3::new(-2.0, -1.0, -1.0),
+            horizontal: Vec3::new(4.0, 0.0, 0.0),
+            vertical: Vec3::new(0.0, 2.0, 0.0),
+        }
+    }
+}
+
+impl Camera {
+    fn get_ray(&self, u : f32, v : f32) -> Ray {
+        Ray::new(self.origin, self.lower_left_corner + u*self.horizontal + v*self.vertical - self.origin)
+    }
+}
+
+fn ray_color(ray: &Ray, world : &HittableList) -> Vec3 {
     let mut rec = HitRecord::default();
     if world.hit(ray, 0.0, f32::INFINITY, &mut rec) {
-        return (0.5 * (rec.normal + Vec3::new(1.0,1.0,1.0))).into();
+        return 0.5 * (rec.normal + Vec3::new(1.0,1.0,1.0));
     }
 
     // Show gradient for background
     let unit_direction = ray.direction().to_unit();
     let t = 0.5*(unit_direction.y() + 1.0);
     let lerped = (1.0-t) * Vec3::new(1.0, 1.0, 1.0) + t * Vec3::new(0.5, 0.7, 1.0);
-    return lerped.into();
+    return lerped;
 }
 
+const SAMPLES_PER_PIXEL : u16 = 100;
+const IMAGE_WIDTH : u16 = 512;
+const IMAGE_HEIGHT : u16 = 256;
+
 fn main() {
+    let mut rng = rand::thread_rng();
     let mut pm = PixMap::default();
 
-    let lower_left_corner = Vec3::new(-2.0, -1.0, -1.0);
-    let horizontal = Vec3::new(4.0, 0.0, 0.0);
-    let vertical = Vec3::new(0.0, 2.0, 0.0);
-    let origin = Vec3::new(0.0, 0.0, 0.0);
-
     let mut world = HittableList::new();
-    world.add(Sphere::new(Vec3::new(0.0,0.0,-1.0), 0.5));
-    world.add(Sphere::new(Vec3::new(0.0,-100.5,-1.0), 100.0));
+    //world.add(Sphere::new(Vec3::new(0.0,0.0,-1.0), 0.5));
+   //world.add(Sphere::new(Vec3::new(0.0,-100.5,-1.0), 100.0));
+
+    for _ in 0..100 {
+        world.add(Sphere::new(Vec3::new(
+            rng.gen_range(-100.0,100.0),
+            rng.gen_range(-100.0,100.0),
+            rng.gen_range(-200.0,-20.0)
+        ), rng.gen_range(1.0,20.0)));
+    }
+
+    let cam = Camera::default();
+
+    let start = Instant::now();
 
     for j in (0..pm.height).rev() {
         eprint!("\rScanlines remaining: {}", j);
+
+        let j = j as f32;
         for i in 0..pm.width {
-            let u = i as f32 / pm.width as f32;
-            let v = j as f32 / pm.height as f32;
-            let r = Ray::new(origin, lower_left_corner + u*horizontal + v*vertical);
-            let color = ray_color(&r, &world);
-            pm.pixels.push(color.into());
+            let mut samples = Samples::default();
+            let i = i as f32;
+            for _ in 0..SAMPLES_PER_PIXEL {
+                let u = (i + rng.gen::<f32>()) / pm.width as f32;
+                let v = (j + rng.gen::<f32>()) / pm.height as f32;
+                let r = cam.get_ray(u, v);
+                samples.add_sample(ray_color(&r, &world));
+            }
+            pm.pixels.push(samples.into());
         }
     }
     eprint!("\nDone");
 
     pm.save();
-    eprint!("\nSaved");
+    let duration = start.elapsed();
 
+    eprintln!("\nSaved. Took {:?}", duration);
 }
 
 struct PixMap {
@@ -159,8 +209,8 @@ struct PixMap {
 impl Default for PixMap {
     fn default() -> Self {
         Self {
-            width: 512,
-            height: 256,
+            width: IMAGE_WIDTH,
+            height: IMAGE_HEIGHT,
             pixels: Vec::new(),
         }
     }

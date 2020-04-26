@@ -20,14 +20,42 @@ impl Color {
     }
 }
 
-impl Into<Color> for Vec3 {
+pub struct Samples {
+    vector : Vec3,
+    num_samples : u16,
+}
+
+impl Default for Samples {
+    fn default() -> Self {
+        Samples {
+            vector: Vec3::new(0.0,0.0,0.0),
+            num_samples: 0,
+        }
+    }
+}
+
+impl Samples {
+    pub fn add_sample(&mut self, sample : Vec3) {
+        self.vector = self.vector + sample; // TODO make AddAssign impl?
+        self.num_samples += 1;
+    }
+}
+
+fn clamp(x : f32, min : f32, max : f32) -> f32 {
+    if x < min { min } else if x > max { max } else { x }
+}
+
+impl Into<Color> for Samples {
     fn into(self) -> Color {
-        let bit_depth = 255.999;
+        let scale = 1.0 / self.num_samples as f32;
+        let r = scale * self.vector.x();
+        let g = scale * self.vector.y();
+        let b = scale * self.vector.z();
 
         Color(
-            (self.x() * bit_depth) as u8,
-            (self.y() * bit_depth) as u8,
-            (self.z() * bit_depth) as u8,
+            (256.0 * clamp(r, 0.0, 0.999)) as u8,
+            (256.0 * clamp(g, 0.0, 0.999)) as u8,
+            (256.0 * clamp(b, 0.0, 0.999)) as u8
         )
     }
 }
