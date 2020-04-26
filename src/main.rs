@@ -7,11 +7,15 @@ use std::f64::{consts};
 mod color;
 mod vec;
 mod solids;
+mod camera;
+mod ray;
 
 use color::Color;
 use color::Samples;
 use vec::Vec3;
 use solids::Sphere;
+use ray::Ray;
+use camera::Camera;
 
 
 struct HitRecord {
@@ -29,7 +33,7 @@ impl Default for HitRecord {
             t : 0.0,
             p : Vec3::new(0.0,0.0,0.0),
             normal : Vec3::new(0.0,0.0,0.0),
-            front_face : true
+            front_face : true,
         }
     }
 }
@@ -41,13 +45,17 @@ impl HitRecord {
     }
 }
 
+trait Material {
+    fn scatter(&self, r_in : &Ray, rec : &HitRecord, attenuation : Vec3, scattered : &Ray) -> bool;
+}
+
 trait Hittable {
     fn hit(&self, ray : &Ray, t_min : f64, t_max : f64, rec : &mut HitRecord) -> bool;
 }
 
 impl Hittable for Sphere {
     fn hit(&self, ray : &Ray, t_min : f64, t_max : f64, rec : &mut HitRecord) -> bool {
-        let oc = ray.origin - self.center();
+        let oc = ray.origin() - self.center();
         let a = ray.direction().length_squared();
         let half_b = Vec3::dot(oc, ray.direction());
         let c = oc.length_squared() - self.radius()*self.radius();
@@ -78,6 +86,7 @@ impl Hittable for Sphere {
 }
 
 struct HittableList {
+    // TODO: change this to use Hittables not Spheres
     objects : Vec<Box<Sphere>>
 }
 
@@ -113,30 +122,6 @@ impl HittableList {
         }
 
         return hit_anything;
-    }
-}
-
-struct Camera {
-    origin : Vec3,
-    lower_left_corner : Vec3,
-    horizontal : Vec3,
-    vertical : Vec3,
-}
-
-impl Default for Camera {
-    fn default() -> Self {
-        Camera {
-            origin: Vec3::new(0.0, 0.0, 0.0),
-            lower_left_corner: Vec3::new(-2.0, -1.0, -1.0),
-            horizontal: Vec3::new(4.0, 0.0, 0.0),
-            vertical: Vec3::new(0.0, 2.0, 0.0),
-        }
-    }
-}
-
-impl Camera {
-    fn get_ray(&self, u : f64, v : f64) -> Ray {
-        Ray::new(self.origin, self.lower_left_corner + u*self.horizontal + v*self.vertical - self.origin)
     }
 }
 
@@ -184,7 +169,7 @@ fn ray_color<T : Rng>(ray: &Ray, world : &HittableList, rng : &mut T, depth : u8
     return lerped;
 }
 
-const SAMPLES_PER_PIXEL : u16 = 100;
+const SAMPLES_PER_PIXEL : u16 = 1000;
 const IMAGE_WIDTH : u16 = 512;
 const IMAGE_HEIGHT : u16 = 256;
 const MAX_DEPTH : u8 = 50;
@@ -209,6 +194,7 @@ fn main() {
 
     let start = Instant::now();
 
+    eprintln!("{}x{} image with {} samples per pixel", IMAGE_HEIGHT, IMAGE_WIDTH, SAMPLES_PER_PIXEL);
     for j in (0..pm.height).rev() {
         eprint!("\rScanlines remaining: {}", j);
 
@@ -256,31 +242,5 @@ impl PixMap {
         for color in &self.pixels {
             println!("{}", color);
         }
-    }
-}
-
-struct Ray {
-    origin: Vec3,
-    vec: Vec3,
-}
-
-impl Ray {
-    pub fn new(origin : Vec3, dir : Vec3) -> Ray {
-        Ray {
-            origin: origin,
-            vec: dir
-        }
-    }
-
-    pub fn origin(&self) -> Vec3 {
-        self.origin
-    }
-
-    pub fn direction(&self) -> Vec3 {
-        self.vec
-    }
-
-    pub fn at(&self, t: f64) -> Vec3 {
-        self.origin + self.vec * t
     }
 }
