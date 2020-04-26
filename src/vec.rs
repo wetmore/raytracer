@@ -1,30 +1,31 @@
 use std::ops::{Add, Sub, Mul, Div, Neg};
+use rand::Rng;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub struct Vec3(f32, f32, f32);
+pub struct Vec3(f64, f64, f64);
 
 impl Vec3 {
-    pub fn new(x: f32, y: f32, z: f32) -> Self {
+    pub fn new(x: f64, y: f64, z: f64) -> Self {
         Self(x, y, z)
     }
 
-    pub fn x(&self) -> f32 {
+    pub fn x(&self) -> f64 {
         self.0
     }
 
-    pub fn y(&self) -> f32 {
+    pub fn y(&self) -> f64 {
         self.1
     }
 
-    pub fn z(&self) -> f32 {
+    pub fn z(&self) -> f64 {
         self.2
     }
 
-    pub fn length(&self) -> f32 {
+    pub fn length(&self) -> f64 {
         self.length_squared().sqrt()
     }
 
-    pub fn length_squared(&self) -> f32 {
+    pub fn length_squared(&self) -> f64 {
         self.0 * self.0 + self.1 * self.1 + self.2 * self.2
     }
 
@@ -33,8 +34,16 @@ impl Vec3 {
         Vec3::new(self.0 / l, self.1 / l, self.2 / l)
     }
 
-    pub fn dot(v1 : Vec3, v2 : Vec3) -> f32 {
+    pub fn dot(v1 : Vec3, v2 : Vec3) -> f64 {
         v1.x() * v2.x() + v1.y() * v2.y() + v1.z() * v2.z()
+    }
+
+    pub fn random<T : Rng>(rng : &mut T) -> Vec3 {
+        Vec3::new(rng.gen(),rng.gen(),rng.gen())
+    }
+
+    pub fn random_interval<T : Rng>(rng : &mut T, min : f64, max : f64) -> Vec3 {
+        Vec3::new(rng.gen_range(min,max),rng.gen_range(min,max),rng.gen_range(min,max))
     }
 }
 
@@ -62,15 +71,15 @@ impl Mul<Self> for Vec3 {
     }
 }
 
-impl Mul<f32> for Vec3 {
+impl Mul<f64> for Vec3 {
     type Output = Self;
 
-    fn mul(self, other: f32) -> Self::Output {
+    fn mul(self, other: f64) -> Self::Output {
         Self::new(self.0 * other, self.1 * other, self.2 * other)
     }
 }
 
-impl Mul<Vec3> for f32 {
+impl Mul<Vec3> for f64 {
     type Output = Vec3;
 
     fn mul(self, other: Vec3) -> Self::Output {
@@ -78,10 +87,10 @@ impl Mul<Vec3> for f32 {
     }
 }
 
-impl Div<f32> for Vec3 {
+impl Div<f64> for Vec3 {
     type Output = Vec3;
 
-    fn div(self, other: f32) -> Self::Output {
+    fn div(self, other: f64) -> Self::Output {
         Vec3::new(self.0 / other, self.1 / other, self.2 / other)
     }
 }

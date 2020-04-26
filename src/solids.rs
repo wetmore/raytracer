@@ -3,11 +3,11 @@ use crate::vec::Vec3;
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Sphere {
     center: Vec3,
-    radius: f32
+    radius: f64
 }
 
 impl Sphere {
-    pub fn new(center: Vec3, radius : f32) -> Self {
+    pub fn new(center: Vec3, radius : f64) -> Self {
         Self {
             center : center,
             radius: radius
@@ -18,7 +18,7 @@ impl Sphere {
         self.center
     }
 
-    pub fn radius(&self) -> f32 {
+    pub fn radius(&self) -> f64 {
         self.radius
     }
 }

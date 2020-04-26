@@ -41,16 +41,16 @@ impl Samples {
     }
 }
 
-fn clamp(x : f32, min : f32, max : f32) -> f32 {
+fn clamp(x : f64, min : f64, max : f64) -> f64 {
     if x < min { min } else if x > max { max } else { x }
 }
 
 impl Into<Color> for Samples {
     fn into(self) -> Color {
-        let scale = 1.0 / self.num_samples as f32;
-        let r = scale * self.vector.x();
-        let g = scale * self.vector.y();
-        let b = scale * self.vector.z();
+        let scale = 1.0 / self.num_samples as f64;
+        let r = (scale * self.vector.x()).sqrt();
+        let g = (scale * self.vector.y()).sqrt();
+        let b = (scale * self.vector.z()).sqrt();
 
         Color(
             (256.0 * clamp(r, 0.0, 0.999)) as u8,

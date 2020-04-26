@@ -1,7 +1,8 @@
 extern crate rand;
 
 use rand::Rng;
-use std::time::{Duration, Instant};
+use std::time::{Instant};
+use std::f64::{consts};
 
 mod color;
 mod vec;
@@ -14,7 +15,7 @@ use solids::Sphere;
 
 
 struct HitRecord {
-    t : f32,
+    t : f64,
     p : Vec3,
     normal : Vec3,
     front_face : bool,
@@ -41,11 +42,11 @@ impl HitRecord {
 }
 
 trait Hittable {
-    fn hit(&self, ray : &Ray, t_min : f32, t_max : f32, rec : &mut HitRecord) -> bool;
+    fn hit(&self, ray : &Ray, t_min : f64, t_max : f64, rec : &mut HitRecord) -> bool;
 }
 
 impl Hittable for Sphere {
-    fn hit(&self, ray : &Ray, t_min : f32, t_max : f32, rec : &mut HitRecord) -> bool {
+    fn hit(&self, ray : &Ray, t_min : f64, t_max : f64, rec : &mut HitRecord) -> bool {
         let oc = ray.origin - self.center();
         let a = ray.direction().length_squared();
         let half_b = Vec3::dot(oc, ray.direction());
@@ -95,7 +96,7 @@ impl HittableList {
         self.objects.push(Box::new(object))
     }
 
-    pub fn hit(&self, ray : &Ray, t_min : f32, t_max : f32, rec : &mut HitRecord) -> bool {
+    pub fn hit(&self, ray : &Ray, t_min : f64, t_max : f64, rec : &mut HitRecord) -> bool {
         let mut temp_rec = HitRecord::default();
         let mut hit_anything = false;
         let mut closest_so_far = t_max;
@@ -134,15 +135,46 @@ impl Default for Camera {
 }
 
 impl Camera {
-    fn get_ray(&self, u : f32, v : f32) -> Ray {
+    fn get_ray(&self, u : f64, v : f64) -> Ray {
         Ray::new(self.origin, self.lower_left_corner + u*self.horizontal + v*self.vertical - self.origin)
     }
 }
 
-fn ray_color(ray: &Ray, world : &HittableList) -> Vec3 {
+fn random_in_unit_sphere<T : Rng>(rng : &mut T) -> Vec3 {
+    loop {
+        let p = Vec3::random_interval(rng, -1.0, 1.0);
+        if p.length_squared() > 1.0 { continue };
+        return p;
+    }
+}
+
+fn random_unit_vector<T : Rng>(rng : &mut T) -> Vec3 {
+    let a = rng.gen_range(0.0, 2.0 * consts::PI);
+    let z : f64 = rng.gen_range(-1.0, 1.0);
+    let r = (1.0 - z*z).sqrt();
+    return Vec3::new(r * a.cos(), r*a.sin(), z);
+}
+
+fn random_in_hemisphere<T : Rng>(rng : &mut T, normal : &Vec3) -> Vec3 {
+    let in_unit_sphere = random_in_unit_sphere(rng);
+    // In the same hemisphere as the normal
+    if Vec3::dot(in_unit_sphere, *normal) > 0.0 {
+        in_unit_sphere
+    } else {
+        -in_unit_sphere
+    }
+}
+
+fn ray_color<T : Rng>(ray: &Ray, world : &HittableList, rng : &mut T, depth : u8) -> Vec3 {
+    if depth <= 0 {
+        return Vec3::new(0.0,0.0,0.0);
+    }
+
     let mut rec = HitRecord::default();
-    if world.hit(ray, 0.0, f32::INFINITY, &mut rec) {
-        return 0.5 * (rec.normal + Vec3::new(1.0,1.0,1.0));
+
+    if world.hit(ray, 0.001, f64::INFINITY, &mut rec) {
+        let target = rec.p + rec.normal + random_unit_vector(rng);
+        return 0.5 * ray_color(&Ray::new(rec.p, target - rec.p), world, rng, depth-1);
     }
 
     // Show gradient for background
@@ -155,22 +187,23 @@ fn ray_color(ray: &Ray, world : &HittableList) -> Vec3 {
 const SAMPLES_PER_PIXEL : u16 = 100;
 const IMAGE_WIDTH : u16 = 512;
 const IMAGE_HEIGHT : u16 = 256;
+const MAX_DEPTH : u8 = 50;
 
 fn main() {
     let mut rng = rand::thread_rng();
     let mut pm = PixMap::default();
 
     let mut world = HittableList::new();
-    //world.add(Sphere::new(Vec3::new(0.0,0.0,-1.0), 0.5));
-   //world.add(Sphere::new(Vec3::new(0.0,-100.5,-1.0), 100.0));
+    world.add(Sphere::new(Vec3::new(0.0,0.0,-1.0), 0.5));
+    world.add(Sphere::new(Vec3::new(0.0,-100.5,-1.0), 100.0));
 
-    for _ in 0..100 {
-        world.add(Sphere::new(Vec3::new(
-            rng.gen_range(-100.0,100.0),
-            rng.gen_range(-100.0,100.0),
-            rng.gen_range(-200.0,-20.0)
-        ), rng.gen_range(1.0,20.0)));
-    }
+    //for _ in 0..100 {
+    //    world.add(Sphere::new(Vec3::new(
+    //        rng.gen_range(-100.0,100.0),
+    //        rng.gen_range(-100.0,100.0),
+    //        rng.gen_range(-200.0,-20.0)
+    //    ), rng.gen_range(1.0,20.0)));
+    //}
 
     let cam = Camera::default();
 
@@ -179,15 +212,15 @@ fn main() {
     for j in (0..pm.height).rev() {
         eprint!("\rScanlines remaining: {}", j);
 
-        let j = j as f32;
+        let j = j as f64;
         for i in 0..pm.width {
             let mut samples = Samples::default();
-            let i = i as f32;
+            let i = i as f64;
             for _ in 0..SAMPLES_PER_PIXEL {
-                let u = (i + rng.gen::<f32>()) / pm.width as f32;
-                let v = (j + rng.gen::<f32>()) / pm.height as f32;
+                let u = (i + rng.gen::<f64>()) / pm.width as f64;
+                let v = (j + rng.gen::<f64>()) / pm.height as f64;
                 let r = cam.get_ray(u, v);
-                samples.add_sample(ray_color(&r, &world));
+                samples.add_sample(ray_color(&r, &world, &mut rng, MAX_DEPTH));
             }
             pm.pixels.push(samples.into());
         }
@@ -247,7 +280,7 @@ impl Ray {
         self.vec
     }
 
-    pub fn at(&self, t: f32) -> Vec3 {
+    pub fn at(&self, t: f64) -> Vec3 {
         self.origin + self.vec * t
     }
 }
