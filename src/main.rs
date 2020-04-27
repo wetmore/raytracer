@@ -45,10 +45,10 @@ fn ray_color<T : Rng>(ray: &Ray, world : &HittableList, rng : &mut T, depth : u1
     }
 }
 
-const SAMPLES_PER_PIXEL : u16 = 400;
-const IMAGE_WIDTH : u16 = 2880;
-const IMAGE_HEIGHT : u16 = 1800;
-const MAX_DEPTH : u16 = 1000;
+const SAMPLES_PER_PIXEL : u16 = 512;
+const IMAGE_WIDTH : u16 = 600;
+const IMAGE_HEIGHT : u16 = 400;
+const MAX_DEPTH : u16 = 500;
 
 fn main() {
     let mut rng = rand::thread_rng();
@@ -74,7 +74,9 @@ fn main() {
     let vup = Vec3::new(0.0,1.0,0.0);
     let look_at = Vec3::new(0.0,0.0,-1.0);
     let look_from = Vec3::new(-2.0,1.0,-0.2);
-    let cam = Camera::new(20.0, pm.aspect(), look_at, look_from, vup);
+    let aperature = 0.0;
+    let focus_dist = (look_from - look_at).length();
+    let cam = Camera::new(30.0, pm.aspect(), aperature, focus_dist, look_at, look_from, vup);
 
     //let vup = Vec3::new(0.0,1.0,0.0);
     //let look_at = Vec3::new(0.0,0.0,-1.0);
@@ -85,7 +87,7 @@ fn main() {
 
     eprintln!("{}x{} image with {} samples per pixel", IMAGE_WIDTH, IMAGE_HEIGHT, SAMPLES_PER_PIXEL);
     for j in (0..pm.height()).rev() {
-        eprint!("\rScanlines remaining: {}", j);
+        eprint!("\rScanlines remaining: {:04}", j);
 
         let j = j as f64;
         for i in 0..pm.width() {
@@ -94,7 +96,7 @@ fn main() {
             for _ in 0..SAMPLES_PER_PIXEL {
                 let u = (i + rng.gen::<f64>()) / pm.width() as f64;
                 let v = (j + rng.gen::<f64>()) / pm.height() as f64;
-                let r = cam.get_ray(u, v);
+                let r = cam.get_ray(u, v, &mut rng);
                 samples.add_sample(ray_color(&r, &world, &mut rng, MAX_DEPTH));
             }
             pm.push(samples.into());
