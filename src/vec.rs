@@ -38,6 +38,10 @@ impl Vec3 {
         v1.x() * v2.x() + v1.y() * v2.y() + v1.z() * v2.z()
     }
 
+    pub fn reflect(v : Vec3, n : Vec3) -> Vec3 {
+        v - 2.0*Vec3::dot(v,n)*n
+    }
+
     pub fn random<T : Rng>(rng : &mut T) -> Vec3 {
         Vec3::new(rng.gen(),rng.gen(),rng.gen())
     }
