@@ -45,21 +45,22 @@ fn ray_color<T : Rng>(ray: &Ray, world : &HittableList, rng : &mut T, depth : u1
     }
 }
 
-const SAMPLES_PER_PIXEL : u16 = 256;
-const IMAGE_WIDTH : u16 = 400;
-const IMAGE_HEIGHT : u16 = 200;
-const MAX_DEPTH : u16 = 256;
+const SAMPLES_PER_PIXEL : u16 = 1;
+const IMAGE_WIDTH : u16 = 800;
+const IMAGE_HEIGHT : u16 = 400;
+const MAX_DEPTH : u16 = 500;
 
 fn main() {
     let mut rng = rand::thread_rng();
     let mut pm = PixMap::new(IMAGE_WIDTH, IMAGE_HEIGHT);
 
     let mut world = HittableList::new();
-    world.add(Sphere::new(Vec3::new(0.0,0.0,-2.0), 0.5), MaterialType::Metal(Vec3::new(0.7, 0.3, 0.3), 0.0));
-    world.add(Sphere::new(Vec3::new(0.0,-100.5,-2.0), 100.0), MaterialType::Metal(Vec3::new(0.8,0.8,0.0), 0.3));
+    world.add(Sphere::new(Vec3::new(0.0,0.0,-1.0), 0.5), MaterialType::Metal(Vec3::new(0.7, 0.3, 0.3), 0.0));
+    world.add(Sphere::new(Vec3::new(0.0,-100.5,-1.0), 100.0), MaterialType::Metal(Vec3::new(0.8,0.8,0.0), 0.3));
 
-    world.add(Sphere::new(Vec3::new(1.0,0.0,-2.0), 0.5), MaterialType::Metal(Vec3::new(0.8, 0.6, 0.2), 1.0));
-    world.add(Sphere::new(Vec3::new(-1.0,0.0,-2.0), 0.5), MaterialType::Metal(Vec3::new(0.8,0.8,0.8), 1.0));
+    world.add(Sphere::new(Vec3::new(1.0,0.0,-1.0), 0.5), MaterialType::Metal(Vec3::new(0.8, 0.6, 0.2), 1.0));
+    world.add(Sphere::new(Vec3::new(-1.0,0.0,-1.0), 0.5), MaterialType::Dielectric(1.5));
+    world.add(Sphere::new(Vec3::new(-1.0,0.0,-1.0), -0.45), MaterialType::Dielectric(1.5));
 
     //for _ in 0..100 {
     //    world.add(Sphere::new(Vec3::new(

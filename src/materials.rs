@@ -1,12 +1,13 @@
-
 use crate::vec::Vec3;
 use crate::ray::Ray;
 use crate::rand::Rng;
+
 
 #[derive(Clone, Copy)]
 pub enum MaterialType {
     Lambertian(Vec3), // Albedo
     Metal(Vec3, f64), // Albedo, Fuzz radius
+    Dielectric(f64), // Refractive Index
 }
 
 pub trait Material {
@@ -28,9 +29,38 @@ impl Material for MaterialType {
                 } else {
                     None
                 }
+            },
+            MaterialType::Dielectric(ref_idx) => {
+                let etai_over_etat = if rec.front_face {
+                    1.0 / ref_idx
+                } else {
+                    *ref_idx
+                };
+                let unit_direction = r_in.direction().to_unit();
+                let cos_theta = f64::min(Vec3::dot(-unit_direction, rec.normal), 1.0);
+                let sin_theta = (1.0 - cos_theta*cos_theta).sqrt();
+                
+                let new_direction = if etai_over_etat * sin_theta > 1.0 {
+                    Vec3::reflect(unit_direction, rec.normal)
+                } else {
+                    let reflect_prob = schlick(cos_theta, etai_over_etat);
+                    if rng.gen::<f64>() < reflect_prob {
+                        Vec3::reflect(unit_direction, rec.normal)
+
+                    } else {
+                        Vec3::refract(unit_direction, rec.normal, etai_over_etat)
+                    }
+                };
+                Some((Vec3::new(1.0,1.0,1.0), Ray::new(rec.p, new_direction)))
             }
         }
     }
+}
+
+fn schlick(cosine : f64, ref_idx : f64) -> f64 {
+    let r0 = (1.0-ref_idx) / (1.0+ref_idx);
+    let r0 = r0*r0;
+    return r0 + (1.0-r0)*((1.0 - cosine).powf(5.0));
 }
 
 pub struct HitRecord {
