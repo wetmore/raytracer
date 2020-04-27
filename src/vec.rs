@@ -1,5 +1,7 @@
 use std::ops::{Add, Sub, Mul, Div, Neg};
 use rand::Rng;
+use std::f64::{consts};
+
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Vec3(f64, f64, f64);
@@ -48,6 +50,31 @@ impl Vec3 {
 
     pub fn random_interval<T : Rng>(rng : &mut T, min : f64, max : f64) -> Vec3 {
         Vec3::new(rng.gen_range(min,max),rng.gen_range(min,max),rng.gen_range(min,max))
+    }
+
+    pub fn random_in_unit_sphere<T : Rng>(rng : &mut T) -> Vec3 {
+        loop {
+            let p = Vec3::random_interval(rng, -1.0, 1.0);
+            if p.length_squared() > 1.0 { continue };
+            return p;
+        }
+    }
+
+    pub fn random_unit_vector<T : Rng>(rng : &mut T) -> Vec3 {
+        let a = rng.gen_range(0.0, 2.0 * consts::PI);
+        let z : f64 = rng.gen_range(-1.0, 1.0);
+        let r = (1.0 - z*z).sqrt();
+        return Vec3::new(r * a.cos(), r*a.sin(), z);
+    }
+
+    pub fn random_in_hemisphere<T : Rng>(rng : &mut T, normal : &Vec3) -> Vec3 {
+        let in_unit_sphere = Self::random_in_unit_sphere(rng);
+        // In the same hemisphere as the normal
+        if Vec3::dot(in_unit_sphere, *normal) > 0.0 {
+            in_unit_sphere
+        } else {
+            -in_unit_sphere
+        }
     }
 }
 
