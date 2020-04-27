@@ -45,10 +45,10 @@ fn ray_color<T : Rng>(ray: &Ray, world : &HittableList, rng : &mut T, depth : u1
     }
 }
 
-const SAMPLES_PER_PIXEL : u16 = 1;
-const IMAGE_WIDTH : u16 = 800;
-const IMAGE_HEIGHT : u16 = 400;
-const MAX_DEPTH : u16 = 500;
+const SAMPLES_PER_PIXEL : u16 = 400;
+const IMAGE_WIDTH : u16 = 2880;
+const IMAGE_HEIGHT : u16 = 1800;
+const MAX_DEPTH : u16 = 1000;
 
 fn main() {
     let mut rng = rand::thread_rng();
@@ -63,14 +63,23 @@ fn main() {
     world.add(Sphere::new(Vec3::new(-1.0,0.0,-1.0), -0.45), MaterialType::Dielectric(1.5));
 
     //for _ in 0..100 {
-    //    world.add(Sphere::new(Vec3::new(
-    //        rng.gen_range(-100.0,100.0),
+     //   world.add(Sphere::new(Vec3::new(
+     //       rng.gen_range(-100.0,100.0),
     //        rng.gen_range(-100.0,100.0),
     //        rng.gen_range(-200.0,-20.0)
-    //    ), rng.gen_range(1.0,20.0)));
+    //    ), rng.gen_range(1.0,20.0)),
+    //MaterialType::Metal(Vec3::new(rng.gen_range(0.0,1.0), rng.gen_range(0.0,1.0), rng.gen_range(0.0,1.0)), rng.gen_range(0.0,1.0)));
     //}
 
-    let cam = Camera::default();
+    let vup = Vec3::new(0.0,1.0,0.0);
+    let look_at = Vec3::new(0.0,0.0,-1.0);
+    let look_from = Vec3::new(-2.0,1.0,-0.2);
+    let cam = Camera::new(20.0, pm.aspect(), look_at, look_from, vup);
+
+    //let vup = Vec3::new(0.0,1.0,0.0);
+    //let look_at = Vec3::new(0.0,0.0,-1.0);
+    //let look_from = Vec3::new(0.0,0.0,0.0);
+    //let cam = Camera::new(90.0, pm.aspect(), look_at, look_from, vup);
 
     let start = Instant::now();
 

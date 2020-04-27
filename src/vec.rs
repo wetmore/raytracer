@@ -40,6 +40,12 @@ impl Vec3 {
         v1.x() * v2.x() + v1.y() * v2.y() + v1.z() * v2.z()
     }
 
+    pub fn cross(u : Vec3, v : Vec3) -> Vec3 {
+        Vec3::new(u.y() * v.z() - u.z() * v.y(),
+                u.z() * v.x() - u.x() * v.z(),
+                u.x() * v.y() - u.y() * v.x())
+    }
+
     pub fn reflect(v : Vec3, n : Vec3) -> Vec3 {
         v - 2.0*Vec3::dot(v,n)*n
     }

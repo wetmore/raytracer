@@ -23,12 +23,16 @@ impl PixMap {
         }
     }
 
-    pub fn width(&self) -> u16{
+    pub fn width(&self) -> u16 {
         self.width
     }
 
-    pub fn height(&self) -> u16{
+    pub fn height(&self) -> u16 {
         self.height
+    }
+
+    pub fn aspect(&self) -> f64 {
+        self.width() as f64 / self.height() as f64
     }
 
     pub fn push(&mut self, pixel : Color){
