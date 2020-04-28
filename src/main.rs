@@ -11,15 +11,17 @@ mod ray;
 mod materials;
 mod pixmap;
 mod hittable;
+mod texture;
 
 use color::Samples;
 use vec::Vec3;
 use solids::Sphere;
 use ray::Ray;
 use camera::Camera;
-use materials::{MaterialType, Material, HitRecord};
+use materials::{MaterialType, Material};
 use pixmap::PixMap;
 use hittable::HittableList;
+use texture::TextureType;
 
 fn ray_color<T : Rng>(ray: &Ray, world : &HittableList, rng : &mut T, depth : u16) -> Vec3 {
     if depth <= 0 {
@@ -45,17 +47,19 @@ fn ray_color<T : Rng>(ray: &Ray, world : &HittableList, rng : &mut T, depth : u1
     }
 }
 
-const SAMPLES_PER_PIXEL : u16 = 512;
+const SAMPLES_PER_PIXEL : u16 = 100;
 const IMAGE_WIDTH : u16 = 600;
 const IMAGE_HEIGHT : u16 = 400;
-const MAX_DEPTH : u16 = 500;
+const MAX_DEPTH : u16 = 100;
 
 fn main() {
     let mut rng = rand::thread_rng();
     let mut pm = PixMap::new(IMAGE_WIDTH, IMAGE_HEIGHT);
 
+    let tex = TextureType::Checker(0.01, Vec3::new(0.0,0.0, 0.0), Vec3::new(0.7,0.2, 0.5));
+
     let mut world = HittableList::new();
-    world.add(Sphere::new(Vec3::new(0.0,0.0,-1.0), 0.5), MaterialType::Metal(Vec3::new(0.7, 0.3, 0.3), 0.0));
+    world.add(Sphere::new(Vec3::new(0.0,0.0,-1.0), 0.5), MaterialType::Lambertian(tex));
     world.add(Sphere::new(Vec3::new(0.0,-100.5,-1.0), 100.0), MaterialType::Metal(Vec3::new(0.8,0.8,0.0), 0.3));
 
     world.add(Sphere::new(Vec3::new(1.0,0.0,-1.0), 0.5), MaterialType::Metal(Vec3::new(0.8, 0.6, 0.2), 1.0));
@@ -76,8 +80,13 @@ fn main() {
     let look_from = Vec3::new(-2.0,1.0,-0.2);
     let aperature = 0.0;
     let focus_dist = (look_from - look_at).length();
-    let cam = Camera::new(30.0, pm.aspect(), aperature, focus_dist, look_at, look_from, vup);
+    let cool_cam = Camera::new(30.0, pm.aspect(), aperature, focus_dist, look_at, look_from, vup);
 
+    let look_at = Vec3::new(0.0,0.0,-1.0);
+    let look_from = Vec3::new(0.0,0.0,0.0);
+    let aperature = 0.0;
+    let focus_dist = (look_from - look_at).length();
+    let cam = Camera::new(90.0, pm.aspect(), aperature, focus_dist, look_at, look_from, vup);
     //let vup = Vec3::new(0.0,1.0,0.0);
     //let look_at = Vec3::new(0.0,0.0,-1.0);
     //let look_from = Vec3::new(0.0,0.0,0.0);

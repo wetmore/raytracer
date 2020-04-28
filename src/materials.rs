@@ -1,11 +1,12 @@
 use crate::vec::Vec3;
 use crate::ray::Ray;
 use crate::rand::Rng;
+use crate::texture::{TextureType,Texture};
 
 
 #[derive(Clone, Copy)]
 pub enum MaterialType {
-    Lambertian(Vec3), // Albedo
+    Lambertian(TextureType), // Albedo
     Metal(Vec3, f64), // Albedo, Fuzz radius
     Dielectric(f64), // Refractive Index
 }
@@ -19,7 +20,8 @@ impl Material for MaterialType {
         match self {
             MaterialType::Lambertian(albedo) => {
                 let scatter_direction = rec.normal + Vec3::random_unit_vector(rng);
-                Some((*albedo,Ray::new(rec.p, scatter_direction)))
+                let attenuation = albedo.value(rec.u, rec.v, &rec.p);
+                Some((attenuation ,Ray::new(rec.p, scatter_direction)))
             },
             MaterialType::Metal(albedo, fuzz) => {
                 let reflected = Vec3::reflect(Vec3::to_unit(&r_in.direction()), rec.normal);
@@ -69,18 +71,22 @@ pub struct HitRecord {
     pub normal : Vec3,
     pub front_face : bool,
     pub mat : MaterialType,
+    u : f64,
+    v : f64,
 }
 
 impl HitRecord {
-    pub fn new(t : f64, p : Vec3, outward_normal : Vec3, mat : MaterialType, ray : &Ray) -> Self {
+    pub fn new(t : f64, p : Vec3, outward_normal : Vec3, mat : MaterialType, ray : &Ray, u : f64, v : f64) -> Self {
         let front_face = Vec3::dot(ray.direction(), outward_normal) < 0.0;
         let normal = if front_face { outward_normal } else { -outward_normal };
         HitRecord {
-            t: t,
-            p: p,
-            normal: normal,
-            front_face: front_face,
-            mat: mat,
+            t,
+            p,
+            normal,
+            front_face,
+            mat,
+            u,
+            v,
         }
     }
 }

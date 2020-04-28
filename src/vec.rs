@@ -97,6 +97,15 @@ impl Vec3 {
             -in_unit_sphere
         }
     }
+
+    pub fn component(&self, idx : u8) -> f64 {
+        match idx {
+            0 => self.0, 
+            1 => self.1,
+            2 => self.2,
+            _ => f64::NAN,
+        }
+    }
 }
 
 impl Add<Self> for Vec3 {
