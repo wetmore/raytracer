@@ -3,7 +3,7 @@ extern crate rayon;
 extern crate indicatif;
 
 use rayon::prelude::*;
-use indicatif::{ProgressIterator,ParallelProgressIterator};
+use indicatif::{ProgressIterator,ParallelProgressIterator,ProgressBar, ProgressStyle};
 use rayon::iter::{ParallelIterator, IntoParallelRefIterator};
 use rand::{thread_rng, Rng};
 use std::time::{Instant};
@@ -59,9 +59,9 @@ fn ray_color<T : Rng>(ray: &Ray, world : &HittableList, rng : &mut T, depth : u1
 //const MAX_DEPTH : u16 = 100;
 
 
-const SAMPLES_PER_PIXEL : u16 = 500;
-const IMAGE_WIDTH : u16 = 1280;
-const IMAGE_HEIGHT : u16 = 960;
+const SAMPLES_PER_PIXEL : u16 = 100;
+const IMAGE_WIDTH : u16 = 400;
+const IMAGE_HEIGHT : u16 = 200;
 const MAX_DEPTH : u16 = 100;
 
 #[derive(Clone ,Copy)]
@@ -121,9 +121,19 @@ fn main() {
         }
     }
 
-    let colors: Vec<Color> = pixels.par_iter().progress().map(|p| {
+    let pb = ProgressBar::new(pixels.len() as u64);
+    pb.set_style(
+        ProgressStyle::default_bar()
+            .template(
+                "[{elapsed_precise}] {wide_bar} {pos:>7}/{len:7} {msg} [{eta_precise}]"
+            ),
+    );
+
+
+    let colors: Vec<Color> = pixels.par_iter().progress_with(pb).map(|p| {
         let mut rng = thread_rng();
-        raytrace_pixel(*p, &pm, cam, &world, &mut rng)
+        let color = raytrace_pixel(*p, &pm, cam, &world, &mut rng);
+        return color;
     }).collect();
 
 
