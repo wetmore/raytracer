@@ -17,16 +17,18 @@ mod materials;
 mod pixmap;
 mod hittable;
 mod texture;
+mod scenes;
 
 use color::{Color, Samples};
 use vec::Vec3;
 use solids::Sphere;
 use ray::Ray;
-use camera::Camera;
+use camera::{Camera, CameraOptions};
 use materials::{MaterialType, Material};
 use pixmap::PixMap;
 use hittable::HittableList;
 use texture::TextureType;
+use scenes::{Scene, use_scene};
 
 fn ray_color<T : Rng>(ray: &Ray, world : &HittableList, rng : &mut T, depth : u16) -> Vec3 {
     if depth <= 0 {
@@ -59,9 +61,9 @@ fn ray_color<T : Rng>(ray: &Ray, world : &HittableList, rng : &mut T, depth : u1
 //const MAX_DEPTH : u16 = 100;
 
 
-const SAMPLES_PER_PIXEL : u16 = 100;
-const IMAGE_WIDTH : u16 = 400;
-const IMAGE_HEIGHT : u16 = 200;
+const SAMPLES_PER_PIXEL : u16 = 500;
+const IMAGE_WIDTH : u16 = 800;
+const IMAGE_HEIGHT : u16 = 600;
 const MAX_DEPTH : u16 = 100;
 
 #[derive(Clone ,Copy)]
@@ -74,43 +76,8 @@ fn main() {
     let mut pm = PixMap::new(IMAGE_WIDTH, IMAGE_HEIGHT);
     let mut pixels = Vec::new();
 
-    let tex = TextureType::Checker(0.01, Vec3::new(0.0,0.0, 0.0), Vec3::new(0.12, 0.45, 0.15));
-
-    let mut world = HittableList::new();
-    world.add(Sphere::new(Vec3::new(0.0,0.0,-1.0), 0.5), MaterialType::Lambertian(tex));
-    // ground
-    world.add(Sphere::new(Vec3::new(0.0,-100.5,-1.0), 100.0), MaterialType::Metal(Vec3::new(0.8,0.8,0.9), 0.1));
-
-    world.add(Sphere::new(Vec3::new(1.0,0.0,-1.0), 0.5), MaterialType::Metal(Vec3::new(0.40625, 0.1015625, 0.52734375), 0.0));
-    // bubble
-    world.add(Sphere::new(Vec3::new(-1.0,0.0,-1.0), 0.5), MaterialType::Dielectric(1.5));
-    world.add(Sphere::new(Vec3::new(-1.0,0.0,-1.0), -0.45), MaterialType::Dielectric(1.5));
-
-    //for _ in 0..100 {
-     //   world.add(Sphere::new(Vec3::new(
-     //       rng.gen_range(-100.0,100.0),
-    //        rng.gen_range(-100.0,100.0),
-    //        rng.gen_range(-200.0,-20.0)
-    //    ), rng.gen_range(1.0,20.0)),
-    //MaterialType::Metal(Vec3::new(rng.gen_range(0.0,1.0), rng.gen_range(0.0,1.0), rng.gen_range(0.0,1.0)), rng.gen_range(0.0,1.0)));
-    //}
-
-    let vup = Vec3::new(0.0,1.0,0.0);
-    let look_at = Vec3::new(0.0,0.0,-1.0);
-    let look_from = Vec3::new(-2.0,1.0,-0.2);
-    let aperature = 0.0;
-    let focus_dist = (look_from - look_at).length();
-    let cool_cam = Camera::new(25.0, pm.aspect(), aperature, focus_dist, look_at, look_from, vup);
-
-    let look_at = Vec3::new(0.5,-0.5,-1.0);
-    let look_from = Vec3::new(0.0,1.0,0.0);
-    let aperature = 0.0;
-    let focus_dist = (look_from - look_at).length();
-    let cam = Camera::new(30.0, pm.aspect(), aperature, focus_dist, look_at, look_from, vup);
-    //let vup = Vec3::new(0.0,1.0,0.0);
-    //let look_at = Vec3::new(0.0,0.0,-1.0);
-    //let look_from = Vec3::new(0.0,0.0,0.0);
-    //let cam = Camera::new(90.0, pm.aspect(), look_at, look_from, vup);
+    let world = use_scene(Scene::THREE_BALLS);
+    let cam = Camera::new(CameraOptions::cool1(&pm));
 
     let start = Instant::now();
 
