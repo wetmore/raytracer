@@ -1,6 +1,11 @@
 extern crate rand;
+extern crate rayon;
+extern crate indicatif;
 
-use rand::Rng;
+use rayon::prelude::*;
+use indicatif::{ProgressIterator,ParallelProgressIterator};
+use rayon::iter::{ParallelIterator, IntoParallelRefIterator};
+use rand::{thread_rng, Rng};
 use std::time::{Instant};
 
 mod color;
@@ -13,7 +18,7 @@ mod pixmap;
 mod hittable;
 mod texture;
 
-use color::Samples;
+use color::{Color, Samples};
 use vec::Vec3;
 use solids::Sphere;
 use ray::Ray;
@@ -47,14 +52,27 @@ fn ray_color<T : Rng>(ray: &Ray, world : &HittableList, rng : &mut T, depth : u1
     }
 }
 
-const SAMPLES_PER_PIXEL : u16 = 512;
+//took 788 seconds
+//const SAMPLES_PER_PIXEL : u16 = 512;
+//const IMAGE_WIDTH : u16 = 1280;
+//const IMAGE_HEIGHT : u16 = 960;
+//const MAX_DEPTH : u16 = 100;
+
+
+const SAMPLES_PER_PIXEL : u16 = 500;
 const IMAGE_WIDTH : u16 = 1280;
 const IMAGE_HEIGHT : u16 = 960;
 const MAX_DEPTH : u16 = 100;
 
+#[derive(Clone ,Copy)]
+struct Pixel {
+    x: u16,
+    y: u16,
+}
+
 fn main() {
-    let mut rng = rand::thread_rng();
     let mut pm = PixMap::new(IMAGE_WIDTH, IMAGE_HEIGHT);
+    let mut pixels = Vec::new();
 
     let tex = TextureType::Checker(0.01, Vec3::new(0.0,0.0, 0.0), Vec3::new(0.12, 0.45, 0.15));
 
@@ -98,25 +116,38 @@ fn main() {
 
     eprintln!("{}x{} image with {} samples per pixel", IMAGE_WIDTH, IMAGE_HEIGHT, SAMPLES_PER_PIXEL);
     for j in (0..pm.height()).rev() {
-        eprint!("\rScanlines remaining: {:04}", j);
-
-        let j = j as f64;
         for i in 0..pm.width() {
-            let mut samples = Samples::default();
-            let i = i as f64;
-            for _ in 0..SAMPLES_PER_PIXEL {
-                let u = (i + rng.gen::<f64>()) / pm.width() as f64;
-                let v = (j + rng.gen::<f64>()) / pm.height() as f64;
-                let r = cool_cam.get_ray(u, v, &mut rng);
-                samples.add_sample(ray_color(&r, &world, &mut rng, MAX_DEPTH));
-            }
-            pm.push(samples.into());
+            pixels.push(Pixel {x:i, y:j});
         }
     }
+
+    let colors: Vec<Color> = pixels.par_iter().progress().map(|p| {
+        let mut rng = thread_rng();
+        raytrace_pixel(*p, &pm, cam, &world, &mut rng)
+    }).collect();
+
+
+    for (i, color) in colors.iter().enumerate() {
+        pm.push(*color);
+    }
+
     eprint!("\nDone");
 
     pm.save();
     let duration = start.elapsed();
 
     eprintln!("\nSaved. Took {:?}", duration);
+}
+
+fn raytrace_pixel<T : Rng>(p : Pixel, pm: &PixMap, camera : Camera, world: &HittableList, rng : &mut T) -> Color {
+    let mut samples = Samples::default();
+    let i = p.x as f64;
+    let j = p.y as f64;
+    for _ in 0..SAMPLES_PER_PIXEL {
+        let u = (i + rng.gen::<f64>()) / pm.width() as f64;
+        let v = (j + rng.gen::<f64>()) / pm.height() as f64;
+        let r = camera.get_ray(u, v, rng);
+        samples.add_sample(ray_color(&r, world, rng, MAX_DEPTH));
+    }
+    return samples.into();
 }

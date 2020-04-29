@@ -1,5 +1,6 @@
 use crate::vec::Vec3;
 
+#[derive(Clone, Copy)]
 pub struct Color(u8, u8, u8);
 
 impl Color {

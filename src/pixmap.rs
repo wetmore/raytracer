@@ -31,6 +31,10 @@ impl PixMap {
         self.height
     }
 
+    pub fn size(&self) -> u16 {
+        self.width * self.height
+    }
+
     pub fn aspect(&self) -> f64 {
         self.width() as f64 / self.height() as f64
     }
@@ -38,4 +42,5 @@ impl PixMap {
     pub fn push(&mut self, pixel : Color){
         self.pixels.push(pixel)
     }
+
 }

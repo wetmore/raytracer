@@ -9,3 +9,5 @@ edition = "2018"
 [dependencies]
 enum_dispatch = "0.3.0"
 rand = "0.7.3"
+rayon = "*"
+indicatif = {version = "*", features = ["with_rayon"]}
