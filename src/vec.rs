@@ -98,7 +98,7 @@ impl Vec3 {
         }
     }
 
-    pub fn component(&self, idx : u8) -> f64 {
+    pub fn comp(&self, idx : u8) -> f64 {
         match idx {
             0 => self.0, 
             1 => self.1,

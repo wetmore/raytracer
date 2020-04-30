@@ -1,3 +1,5 @@
+#![allow(warnings)]
+
 extern crate rand;
 extern crate rayon;
 extern crate indicatif;
@@ -16,6 +18,7 @@ mod ray;
 mod materials;
 mod pixmap;
 mod hittable;
+mod aabb;
 mod texture;
 mod scenes;
 
@@ -61,10 +64,10 @@ fn ray_color<T : Rng>(ray: &Ray, world : &HittableList, rng : &mut T, depth : u1
 //const MAX_DEPTH : u16 = 100;
 
 
-const SAMPLES_PER_PIXEL : u16 = 500;
+const SAMPLES_PER_PIXEL : u16 = 5;
 const IMAGE_WIDTH : u16 = 800;
 const IMAGE_HEIGHT : u16 = 600;
-const MAX_DEPTH : u16 = 100;
+const MAX_DEPTH : u16 = 1000;
 
 #[derive(Clone ,Copy)]
 struct Pixel {
@@ -76,8 +79,8 @@ fn main() {
     let mut pm = PixMap::new(IMAGE_WIDTH, IMAGE_HEIGHT);
     let mut pixels = Vec::new();
 
-    let world = use_scene(Scene::THREE_BALLS);
-    let cam = Camera::new(CameraOptions::cool1(&pm));
+    let world = use_scene(Scene::SHINY);
+    let cam = Camera::new(CameraOptions::cool2(&pm));
 
     let start = Instant::now();
 
@@ -96,10 +99,9 @@ fn main() {
             ),
     );
 
-
-    let colors: Vec<Color> = pixels.par_iter().progress_with(pb).map(|p| {
+    let colors: Vec<Color> = pixels.into_par_iter().progress_with(pb).map(|p| {
         let mut rng = thread_rng();
-        let color = raytrace_pixel(*p, &pm, cam, &world, &mut rng);
+        let color = raytrace_pixel(p as Pixel, &pm, cam, &world, &mut rng);
         return color;
     }).collect();
 
@@ -107,19 +109,20 @@ fn main() {
     for (i, color) in colors.iter().enumerate() {
         pm.push(*color);
     }
-
-    eprint!("\nDone");
-
-    pm.save();
     let duration = start.elapsed();
 
-    eprintln!("\nSaved. Took {:?}", duration);
+    eprint!("\nDone. Took {:?}", duration);
+
+    pm.save();
+
+    eprintln!("\nSaved");
 }
 
 fn raytrace_pixel<T : Rng>(p : Pixel, pm: &PixMap, camera : Camera, world: &HittableList, rng : &mut T) -> Color {
     let mut samples = Samples::default();
     let i = p.x as f64;
     let j = p.y as f64;
+    // TODO: Parallelize sampling as well
     for _ in 0..SAMPLES_PER_PIXEL {
         let u = (i + rng.gen::<f64>()) / pm.width() as f64;
         let v = (j + rng.gen::<f64>()) / pm.height() as f64;
