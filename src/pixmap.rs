@@ -7,7 +7,7 @@ pub struct PixMap {
 }
 
 impl PixMap {
-    pub fn new(w : u16, h : u16) -> Self {
+    pub fn new(w: u16, h: u16) -> Self {
         Self {
             width: w,
             height: h,
@@ -39,8 +39,7 @@ impl PixMap {
         self.width() as f64 / self.height() as f64
     }
 
-    pub fn push(&mut self, pixel : Color){
+    pub fn push(&mut self, pixel: Color) {
         self.pixels.push(pixel)
     }
-
 }

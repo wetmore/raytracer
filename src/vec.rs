@@ -1,7 +1,6 @@
-use std::ops::{Add, Sub, Mul, Div, Neg};
 use rand::Rng;
-use std::f64::{consts};
-
+use std::f64::consts;
+use std::ops::{Add, Div, Mul, Neg, Sub};
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Vec3(f64, f64, f64);
@@ -36,59 +35,69 @@ impl Vec3 {
         Vec3::new(self.0 / l, self.1 / l, self.2 / l)
     }
 
-    pub fn dot(v1 : Vec3, v2 : Vec3) -> f64 {
+    pub fn dot(v1: Vec3, v2: Vec3) -> f64 {
         v1.x() * v2.x() + v1.y() * v2.y() + v1.z() * v2.z()
     }
 
-    pub fn cross(u : Vec3, v : Vec3) -> Vec3 {
-        Vec3::new(u.y() * v.z() - u.z() * v.y(),
-                u.z() * v.x() - u.x() * v.z(),
-                u.x() * v.y() - u.y() * v.x())
+    pub fn cross(u: Vec3, v: Vec3) -> Vec3 {
+        Vec3::new(
+            u.y() * v.z() - u.z() * v.y(),
+            u.z() * v.x() - u.x() * v.z(),
+            u.x() * v.y() - u.y() * v.x(),
+        )
     }
 
-    pub fn reflect(v : Vec3, n : Vec3) -> Vec3 {
-        v - 2.0*Vec3::dot(v,n)*n
+    pub fn reflect(v: Vec3, n: Vec3) -> Vec3 {
+        v - 2.0 * Vec3::dot(v, n) * n
     }
 
-    pub fn refract(uv : Vec3, n : Vec3, etai_over_etat : f64) -> Vec3 {
+    pub fn refract(uv: Vec3, n: Vec3, etai_over_etat: f64) -> Vec3 {
         let cos_theta = Vec3::dot(-uv, n);
-        let r_out_parallel = etai_over_etat * (uv + cos_theta*n);
+        let r_out_parallel = etai_over_etat * (uv + cos_theta * n);
         let r_out_perp = -(1.0 - r_out_parallel.length_squared()).sqrt() * n;
         r_out_parallel + r_out_perp
     }
 
-    pub fn random<T : Rng>(rng : &mut T) -> Vec3 {
-        Vec3::new(rng.gen(),rng.gen(),rng.gen())
+    pub fn random<T: Rng>(rng: &mut T) -> Vec3 {
+        Vec3::new(rng.gen(), rng.gen(), rng.gen())
     }
 
-    pub fn random_interval<T : Rng>(rng : &mut T, min : f64, max : f64) -> Vec3 {
-        Vec3::new(rng.gen_range(min,max),rng.gen_range(min,max),rng.gen_range(min,max))
+    pub fn random_interval<T: Rng>(rng: &mut T, min: f64, max: f64) -> Vec3 {
+        Vec3::new(
+            rng.gen_range(min, max),
+            rng.gen_range(min, max),
+            rng.gen_range(min, max),
+        )
     }
 
-    pub fn random_in_unit_sphere<T : Rng>(rng : &mut T) -> Vec3 {
+    pub fn random_in_unit_sphere<T: Rng>(rng: &mut T) -> Vec3 {
         loop {
             let p = Vec3::random_interval(rng, -1.0, 1.0);
-            if p.length_squared() > 1.0 { continue };
+            if p.length_squared() > 1.0 {
+                continue;
+            };
             return p;
         }
     }
 
-    pub fn random_in_unit_disk<T : Rng>(rng : &mut T) -> Vec3 {
+    pub fn random_in_unit_disk<T: Rng>(rng: &mut T) -> Vec3 {
         loop {
             let p = Vec3::new(rng.gen_range(-1.0, 1.0), rng.gen_range(-1.0, 1.0), 0.0);
-            if p.length_squared() >= 1.0 { continue };
+            if p.length_squared() >= 1.0 {
+                continue;
+            };
             return p;
         }
     }
 
-    pub fn random_unit_vector<T : Rng>(rng : &mut T) -> Vec3 {
+    pub fn random_unit_vector<T: Rng>(rng: &mut T) -> Vec3 {
         let a = rng.gen_range(0.0, 2.0 * consts::PI);
-        let z : f64 = rng.gen_range(-1.0, 1.0);
-        let r = (1.0 - z*z).sqrt();
-        return Vec3::new(r * a.cos(), r*a.sin(), z);
+        let z: f64 = rng.gen_range(-1.0, 1.0);
+        let r = (1.0 - z * z).sqrt();
+        return Vec3::new(r * a.cos(), r * a.sin(), z);
     }
 
-    pub fn random_in_hemisphere<T : Rng>(rng : &mut T, normal : &Vec3) -> Vec3 {
+    pub fn random_in_hemisphere<T: Rng>(rng: &mut T, normal: &Vec3) -> Vec3 {
         let in_unit_sphere = Self::random_in_unit_sphere(rng);
         // In the same hemisphere as the normal
         if Vec3::dot(in_unit_sphere, *normal) > 0.0 {
@@ -98,9 +107,9 @@ impl Vec3 {
         }
     }
 
-    pub fn comp(&self, idx : u8) -> f64 {
+    pub fn comp(&self, idx: u8) -> f64 {
         match idx {
-            0 => self.0, 
+            0 => self.0,
             1 => self.1,
             2 => self.2,
             _ => f64::NAN,

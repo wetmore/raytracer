@@ -1,15 +1,16 @@
 use crate::vec::Vec3;
 
+#[derive(Clone, Copy)]
 pub struct Ray {
     origin: Vec3,
     vec: Vec3,
 }
 
 impl Ray {
-    pub fn new(origin : Vec3, dir : Vec3) -> Ray {
+    pub fn new(origin: Vec3, dir: Vec3) -> Ray {
         Ray {
             origin: origin,
-            vec: dir
+            vec: dir,
         }
     }
 

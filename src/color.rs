@@ -4,8 +4,8 @@ use crate::vec::Vec3;
 pub struct Color(u8, u8, u8);
 
 impl Color {
-    pub fn new(r : u8, g : u8, b : u8) -> Self {
-        Color(r,g,b)
+    pub fn new(r: u8, g: u8, b: u8) -> Self {
+        Color(r, g, b)
     }
 
     fn r(&self) -> u8 {
@@ -22,28 +22,34 @@ impl Color {
 }
 
 pub struct Samples {
-    vector : Vec3,
-    num_samples : u16,
+    vector: Vec3,
+    num_samples: u16,
 }
 
 impl Default for Samples {
     fn default() -> Self {
         Samples {
-            vector: Vec3::new(0.0,0.0,0.0),
+            vector: Vec3::new(0.0, 0.0, 0.0),
             num_samples: 0,
         }
     }
 }
 
 impl Samples {
-    pub fn add_sample(&mut self, sample : Vec3) {
+    pub fn add_sample(&mut self, sample: Vec3) {
         self.vector = self.vector + sample; // TODO make AddAssign impl?
         self.num_samples += 1;
     }
 }
 
-fn clamp(x : f64, min : f64, max : f64) -> f64 {
-    if x < min { min } else if x > max { max } else { x }
+fn clamp(x: f64, min: f64, max: f64) -> f64 {
+    if x < min {
+        min
+    } else if x > max {
+        max
+    } else {
+        x
+    }
 }
 
 impl Into<Color> for Samples {
@@ -56,7 +62,7 @@ impl Into<Color> for Samples {
         Color(
             (256.0 * clamp(r, 0.0, 0.999)) as u8,
             (256.0 * clamp(g, 0.0, 0.999)) as u8,
-            (256.0 * clamp(b, 0.0, 0.999)) as u8
+            (256.0 * clamp(b, 0.0, 0.999)) as u8,
         )
     }
 }
